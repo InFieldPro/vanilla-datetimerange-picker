@@ -9,8 +9,10 @@
  * I just changed the code a bit to not need jquery.
  */
 
+import moment from "moment";
+
 // IE browser doesn't support "class"
-var DateRangePicker;
+export var DateRangePicker;
 (function () {
   DateRangePicker = function (element, options, cb) {
     //default settings for options
@@ -1431,49 +1433,21 @@ var DateRangePicker;
       if (drops == "up") this.container.classList.add("drop-up");
       else this.container.classList.remove("drop-up");
 
-      if (this.opens == "left") {
-        var containerRight =
-          parentRightEdge - elementOffset.left - this.element.offsetWidth;
-        if (containerWidth + containerRight > window.innerWidth) {
-          this.container.style.top = containerTop + "px";
-          this.container.style.right = "auto";
-          this.container.style.left = "9px";
-        } else {
-          this.container.style.top = containerTop + "px";
-          this.container.style.right = containerRight + "px";
-          this.container.style.left = "auto";
-        }
-      } else if (this.opens == "center") {
-        var containerLeft =
-          elementOffset.left -
-          parentOffset.left +
-          this.element.offsetWidth / 2 -
-          containerWidth / 2;
-        if (containerLeft < 0) {
-          this.container.style.top = containerTop + "px";
-          this.container.style.right = "auto";
-          this.container.style.left = "9px";
-        } else if (containerLeft + containerWidth > window.innerWidth) {
-          this.container.style.top = containerTop + "px";
-          this.container.style.left = "auto";
-          this.container.style.right = "0";
-        } else {
-          this.container.style.top = containerTop + "px";
-          this.container.style.left = containerLeft + "px";
-          this.container.style.right = "auto";
-        }
+      // Distance between the picker and its parent
+      var containerLeft = elementOffset.left - parentOffset.left;
+
+      // If the right side of date picker is off the right side of window, then adjust to be within window
+      if (elementOffset.fromRight < containerWidth) {
+        containerLeft = "-" + (containerWidth - elementOffset.fromRight + 35);
+
+        this.container.style.left = containerLeft + "px";
+        this.container.style.right = "auto";
       } else {
-        var containerLeft = elementOffset.left - parentOffset.left;
-        if (containerLeft + containerWidth > window.innerWidth) {
-          this.container.style.top = containerTop + "px";
-          this.container.style.left = "auto";
-          this.container.style.right = "0";
-        } else {
-          this.container.style.top = containerTop + "px";
-          this.container.style.left = containerLeft + "px";
-          this.container.style.right = "auto";
-        }
+        // If picker is within window the position picker square with the select dropdown
+        this.container.style.left = containerLeft + "px";
+        this.container.style.right = "auto";
       }
+      this.container.style.top = "74px";
     },
 
     show: function (e) {
@@ -1510,10 +1484,13 @@ var DateRangePicker;
       this.previousRightTime = this.endDate.clone();
 
       this.updateView();
-      this.container.style.display = "block";
+      this.container.style.display = "flex";
       this.move();
       this.element.dispatchEvent(
-        new CustomEvent("show.daterangepicker", { bubbles: true, detail: this })
+        new CustomEvent("show.daterangepicker", {
+          bubbles: true,
+          detail: this,
+        })
       );
       this.isShowing = true;
     },
@@ -1557,8 +1534,12 @@ var DateRangePicker;
 
       this.container.style.display = "none";
       this.element.dispatchEvent(
-        new CustomEvent("hide.daterangepicker", { bubbles: true, detail: this })
+        new CustomEvent("hide.daterangepicker", {
+          bubbles: true,
+          detail: this,
+        })
       );
+      this.hideCalendars();
       this.isShowing = false;
     },
 
@@ -2320,6 +2301,9 @@ var DateRangePicker;
       return {
         top: rect.top + win.pageYOffset,
         left: rect.left + win.pageXOffset,
+        // fromRight is the distance the left side of the input (that the picker is attached to) is from the right side of the window
+        fromRight:
+          win.innerWidth + win.pageXOffset - (rect.left + win.pageXOffset),
       };
     },
     offSub: function (el, event, listener) {
